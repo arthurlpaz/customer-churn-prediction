@@ -17,5 +17,13 @@ model:
     min_samples_leaf: 2
     class_weight: null
 
+  # optional search over RF hyperparameters on validation split
+  random_forest_search:
+    enabled: true
+    n_estimators: [200, 300, 500]
+    max_depth: [10, 12, 16]
+    min_samples_leaf: [1, 2, 4]
+    class_weight: [null, balanced]
+
 output:
   model_path: artifacts/models/model.pkl

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from itertools import product
+
 import numpy as np
 import yaml
 from sklearn.ensemble import RandomForestClassifier
@@ -53,6 +55,69 @@ def _find_best_threshold(
     return best_threshold, best_score
 
 
+def _build_rf(params: dict, random_state: int):
+    return RandomForestClassifier(
+        n_estimators=params["n_estimators"],
+        max_depth=params["max_depth"],
+        min_samples_leaf=params["min_samples_leaf"],
+        class_weight=params["class_weight"],
+        random_state=random_state,
+        n_jobs=-1,
+    )
+
+
+def _search_best_rf_params(X_train, y_train, X_val, y_val, random_state, config):
+    search_cfg = config["model"].get("random_forest_search", {})
+    if not search_cfg.get("enabled", False):
+        rf_cfg = config["model"]["random_forest"]
+        return rf_cfg, None, None
+
+    n_estimators_grid = search_cfg.get("n_estimators", [200, 300, 500])
+    max_depth_grid = search_cfg.get("max_depth", [8, 12, 16])
+    min_samples_leaf_grid = search_cfg.get("min_samples_leaf", [1, 2, 4])
+    class_weight_grid = search_cfg.get("class_weight", [None, "balanced"])
+
+    threshold_metric = config["model"].get("threshold_metric", "f1")
+    threshold_beta = config["model"].get("threshold_beta", 1.0)
+    min_recall = config["model"].get("min_recall_for_threshold", 0.0)
+
+    best_params = None
+    best_threshold = 0.5
+    best_score = -1.0
+
+    for values in product(
+        n_estimators_grid,
+        max_depth_grid,
+        min_samples_leaf_grid,
+        class_weight_grid,
+    ):
+        params = {
+            "n_estimators": values[0],
+            "max_depth": values[1],
+            "min_samples_leaf": values[2],
+            "class_weight": values[3],
+        }
+
+        model = _build_rf(params, random_state=random_state)
+        model.fit(X_train, y_train)
+        val_probs = model.predict_proba(X_val)[:, 1]
+
+        threshold, score = _find_best_threshold(
+            y_val,
+            val_probs,
+            metric=threshold_metric,
+            beta=threshold_beta,
+            min_recall=min_recall,
+        )
+
+        if score > best_score:
+            best_score = score
+            best_threshold = threshold
+            best_params = params
+
+    return best_params, best_threshold, best_score
+
+
 def train_model(X, y, test_size=0.2, random_state=42):
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
@@ -71,39 +136,42 @@ def train_model(X, y, test_size=0.2, random_state=42):
         stratify=y_train_full,
     )
 
-    rf_cfg = config["model"]["random_forest"]
-    model = RandomForestClassifier(
-        n_estimators=rf_cfg["n_estimators"],
-        max_depth=rf_cfg["max_depth"],
-        min_samples_leaf=rf_cfg.get("min_samples_leaf", 1),
-        class_weight=rf_cfg.get("class_weight", None),
-        random_state=random_state,
+    best_params, best_threshold, best_score = _search_best_rf_params(
+        X_train, y_train, X_val, y_val, random_state=random_state, config=config
     )
 
-    model.fit(X_train, y_train)
+    if best_params is None:
+        rf_cfg = config["model"]["random_forest"]
+        best_params = {
+            "n_estimators": rf_cfg["n_estimators"],
+            "max_depth": rf_cfg["max_depth"],
+            "min_samples_leaf": rf_cfg.get("min_samples_leaf", 1),
+            "class_weight": rf_cfg.get("class_weight", None),
+        }
 
-    val_probs = model.predict_proba(X_val)[:, 1]
+        baseline_model = _build_rf(best_params, random_state=random_state)
+        baseline_model.fit(X_train, y_train)
+        val_probs = baseline_model.predict_proba(X_val)[:, 1]
+
+        threshold_metric = config["model"].get("threshold_metric", "f1")
+        threshold_beta = config["model"].get("threshold_beta", 1.0)
+        min_recall = config["model"].get("min_recall_for_threshold", 0.0)
+        best_threshold, best_score = _find_best_threshold(
+            y_val,
+            val_probs,
+            metric=threshold_metric,
+            beta=threshold_beta,
+            min_recall=min_recall,
+        )
+
+    final_model = _build_rf(best_params, random_state=random_state)
+    final_model.fit(X_train_full, y_train_full)
+
     threshold_metric = config["model"].get("threshold_metric", "f1")
     threshold_beta = config["model"].get("threshold_beta", 1.0)
     min_recall = config["model"].get("min_recall_for_threshold", 0.0)
 
-    best_threshold, best_score = _find_best_threshold(
-        y_val,
-        val_probs,
-        metric=threshold_metric,
-        beta=threshold_beta,
-        min_recall=min_recall,
-    )
-
-    final_model = RandomForestClassifier(
-        n_estimators=rf_cfg["n_estimators"],
-        max_depth=rf_cfg["max_depth"],
-        min_samples_leaf=rf_cfg.get("min_samples_leaf", 1),
-        class_weight=rf_cfg.get("class_weight", None),
-        random_state=random_state,
-    )
-    final_model.fit(X_train_full, y_train_full)
-
+    print(f"Best RF params on validation: {best_params}")
     print(
         f"Best threshold on validation (metric={threshold_metric}, beta={threshold_beta}, min_recall={min_recall}): {best_threshold:.2f}"
     )
