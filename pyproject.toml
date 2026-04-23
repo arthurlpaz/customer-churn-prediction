@@ -1,0 +1,49 @@
+[project]
+name = "churn-prediction"
+version = "0.1.0"
+requires-python = ">=3.12"
+ 
+# BLACK — formatador automático de código
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+exclude = '/(\.git|\.venv|\.conda|__pycache__|\.pytest_cache|dist|build)/'
+ 
+# RUFF — linter (complementa o black, não duplica)
+# Rode com: ruff check src/ tests/ scripts/
+# Correção automática: ruff check --fix src/ tests/ scripts/
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["data/", "docs/", "__pycache__"]
+ 
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes (imports não usados, variáveis indefinidas)
+    "I",   # isort (ordenação de imports)
+    "B",   # flake8-bugbear (bugs comuns)
+    "UP",  # pyupgrade (sintaxe moderna do Python)
+]
+ignore = [
+    "E501",  # line too long — delegado ao black
+]
+ 
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+ 
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*", "scripts/*"]
+ 
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 60
