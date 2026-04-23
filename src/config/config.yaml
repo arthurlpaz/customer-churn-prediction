@@ -11,10 +11,15 @@ model:
   threshold_beta: 1.0
   min_recall_for_threshold: 0.45
 
+  calibration:
+    method: none
+    cv: 3
+
   random_forest:
     n_estimators: 300
     max_depth: 12
     min_samples_leaf: 2
+    max_features: sqrt
     class_weight: null
 
   # optional search over RF hyperparameters on validation split
@@ -23,7 +28,9 @@ model:
     n_estimators: [200, 300, 500]
     max_depth: [10, 12, 16]
     min_samples_leaf: [1, 2, 4]
+    max_features: [sqrt, log2, null]
     class_weight: [null, balanced]
+    calibration_method: [none, sigmoid]
 
 output:
   model_path: artifacts/models/model.pkl
