@@ -1,13 +1,13 @@
-import yaml
 import joblib
 import os
+import yaml
 
 from src.data.load_data import load_data
 from src.data.preprocess import preprocess_data
-from src.features.build_features import build_features
 from src.data.validate import validate_data
-from src.models.train import train_model
+from src.features.build_features import build_features
 from src.models.evaluate import evaluate
+from src.models.train import train_model
 
 
 def run_training_pipeline(config_path="src/config/config.yaml"):
@@ -24,13 +24,16 @@ def run_training_pipeline(config_path="src/config/config.yaml"):
     y = df["Churn"]
 
     model, X_test, y_test = train_model(
-        X, y, test_size=config["model"]["test_size"], random_state=config["model"]["random_state"]
+        X,
+        y,
+        test_size=config["model"]["test_size"],
+        random_state=config["model"]["random_state"],
     )
 
-    evaluate(model, X_test, y_test)
+    threshold = config["model"].get("decision_threshold", 0.5)
+    evaluate(model, X_test, y_test, threshold=threshold)
 
     os.makedirs(os.path.dirname(config["output"]["model_path"]), exist_ok=True)
-
     joblib.dump(model, config["output"]["model_path"])
 
     print("--- Model saved ---")
