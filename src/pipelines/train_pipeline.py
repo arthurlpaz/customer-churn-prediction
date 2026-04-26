@@ -47,7 +47,7 @@ def run_training_pipeline(config_path="src/config/config.yaml", data_path_overri
 
         output_path = config["output"]["model_path"]
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        
+
         joblib.dump(model, output_path)
 
         evaluate(model, X_test, y_test, threshold)
