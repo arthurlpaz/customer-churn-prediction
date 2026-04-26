@@ -3,15 +3,17 @@ data:
 
 model:
   test_size: 0.2
-  validation_size: 0.2
   random_state: 42
-  threshold_beta: 1.0
+  threshold: 0.30
 
-  random_forest:
-    n_estimators: 300
-    max_depth: 12
-    min_samples_leaf: 2
-    class_weight: balanced
+  xgboost:
+    n_estimators: 500
+    max_depth: 3
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    eval_metric: aucpr
+    tree_method: hist
 
 output:
   model_path: artifacts/models/model.pkl
