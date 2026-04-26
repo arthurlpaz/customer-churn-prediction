@@ -6,8 +6,6 @@ import mlflow.sklearn
 from sklearn.metrics import roc_auc_score, recall_score, f1_score
 
 from src.data.load_data import load_data
-from src.data.preprocess import preprocess_data
-from src.features.build_features import build_features
 from src.models.train import train_model
 from src.models.evaluate import evaluate
 
@@ -20,10 +18,10 @@ def run_training_pipeline(config_path="src/config/config.yaml"):
         config = yaml.safe_load(f)
 
     df = load_data(config["data"]["path"])
-    df = preprocess_data(df)
-    df = build_features(df)
 
-    with mlflow.start_run(run_name="xgboost_config_yaml"):
+    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0})
+
+    with mlflow.start_run(run_name="production_pipeline"):
 
         model, X_test, y_test = train_model(df, config)
 
@@ -37,8 +35,6 @@ def run_training_pipeline(config_path="src/config/config.yaml"):
         f1 = f1_score(y_test, preds)
 
         mlflow.log_params(config["model"]["xgboost"])
-        mlflow.log_param("threshold", threshold)
-
         mlflow.log_metric("roc_auc", roc_auc)
         mlflow.log_metric("recall_class_1", recall)
         mlflow.log_metric("f1_score", f1)

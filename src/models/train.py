@@ -1,34 +1,17 @@
-# src/models/train.py
-import pandas as pd
 from sklearn.model_selection import train_test_split
-from xgboost import XGBClassifier
+from src.models.pipeline import build_pipeline
 
 
-def train_model(df: pd.DataFrame, config: dict):
-    X = df.drop(columns=["Churn"])
+def train_model(df, config):
+    X = df.drop(columns=["Churn", "customerID"], errors="ignore")
     y = df["Churn"]
 
-    X = pd.get_dummies(X, drop_first=True)
+    pipeline = build_pipeline(df, config)
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=config["model"]["test_size"],
-        random_state=config["model"]["random_state"],
-        stratify=y,
+        X, y, test_size=config["model"]["test_size"], random_state=config["model"]["random_state"]
     )
 
-    ratio = (y_train == 0).sum() / (y_train == 1).sum()
+    pipeline.fit(X_train, y_train)
 
-    xgb_params = config["model"]["xgboost"]
-
-    model = XGBClassifier(
-        **xgb_params,
-        scale_pos_weight=ratio,
-        random_state=config["model"]["random_state"],
-        n_jobs=-1,
-    )
-
-    model.fit(X_train, y_train)
-
-    return model, X_test, y_test
+    return pipeline, X_test, y_test
