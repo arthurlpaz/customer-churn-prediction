@@ -23,14 +23,15 @@ def run_training_pipeline(config_path="src/config/config.yaml"):
     X = df.drop("Churn", axis=1)
     y = df["Churn"]
 
-    model, X_test, y_test, best_threshold = train_model(
+    model, X_test, y_test = train_model(
         X,
         y,
         test_size=config["model"]["test_size"],
         random_state=config["model"]["random_state"],
     )
 
-    evaluate(model, X_test, y_test, threshold=best_threshold)
+    threshold = config["model"].get("decision_threshold", 0.5)
+    evaluate(model, X_test, y_test, threshold=threshold)
 
     os.makedirs(os.path.dirname(config["output"]["model_path"]), exist_ok=True)
     joblib.dump(model, config["output"]["model_path"])
