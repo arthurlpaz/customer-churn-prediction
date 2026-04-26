@@ -1,3 +1,4 @@
+import os
 import yaml
 import joblib
 import mlflow
@@ -10,12 +11,15 @@ from src.models.train import train_model
 from src.models.evaluate import evaluate
 
 
-def run_training_pipeline(config_path="src/config/config.yaml"):
+def run_training_pipeline(config_path="src/config/config.yaml", data_path_override=None):
 
     mlflow.set_experiment("churn-prediction")
 
     with open(config_path) as f:
         config = yaml.safe_load(f)
+
+    if data_path_override:
+        config["data"]["path"] = data_path_override
 
     df = load_data(config["data"]["path"])
 
@@ -42,5 +46,8 @@ def run_training_pipeline(config_path="src/config/config.yaml"):
         mlflow.sklearn.log_model(model, "model")
 
         joblib.dump(model, config["output"]["model_path"])
+        output_path = config["output"]["model_path"]
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        joblib.dump(model, output_path)
 
         evaluate(model, X_test, y_test, threshold)

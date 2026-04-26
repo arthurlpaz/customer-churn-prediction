@@ -17,4 +17,4 @@ def predict(data: ChurnRequest):
     try:
         return run_inference(data.dict(), MODEL_PATH)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

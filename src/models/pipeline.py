@@ -1,12 +1,10 @@
-# src/models/pipeline.py
 import pandas as pd
-from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder, StandardScaler, FunctionTransformer
 from sklearn.impute import SimpleImputer
 from xgboost import XGBClassifier
-
 from src.models.features import add_features
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 
 
 def build_pipeline(df: pd.DataFrame, config: dict):
