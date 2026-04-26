@@ -70,7 +70,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Generate synthetic dataset
-        run: python scripts/generate_synthetic_telco.py --output /tmp/telco_smoke.csv --rows 1000
+        run: python scripts/generate_synthetic_data.py --output /tmp/telco_smoke.csv --rows 300
 
       - name: Run training pipeline (smoke)
         run: |
