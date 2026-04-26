@@ -1,18 +1,17 @@
 # src/data/preprocess.py
 import pandas as pd
 
-
 def preprocess_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
-    df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+    if "TotalCharges" in df.columns:
+        df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
+        df["TotalCharges"] = df["TotalCharges"].fillna(df["TotalCharges"].median())
 
-    df["TotalCharges"] = df["TotalCharges"].fillna(df["TotalCharges"].median())
+    if "Churn" in df.columns:
+        df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0})
 
-    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0})
-
-    df.drop(columns=["customerID"], inplace=True)
-
-    df = pd.get_dummies(df, drop_first=True)
+    if "customerID" in df.columns:
+        df.drop(columns=["customerID"], inplace=True)
 
     return df
