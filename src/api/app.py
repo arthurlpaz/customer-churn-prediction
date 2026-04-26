@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from src.api.schema import ChurnRequest
 from src.pipelines.inference_pipeline import run_inference
 
 app = FastAPI()
@@ -12,6 +13,8 @@ def home():
 
 
 @app.post("/predict")
-def predict(data: dict):
-    prediction = run_inference(data, MODEL_PATH)
-    return {"churn_prediction": prediction}
+def predict(data: ChurnRequest):
+    try:
+        return run_inference(data.dict(), MODEL_PATH)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
